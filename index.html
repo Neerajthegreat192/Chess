@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#14130f">
+<title>Chess — Play Online</title>
+<style>
+:root{
+  --bg:#14130f; --panel:#1e1c17; --panel2:#26231c; --line:#302c23;
+  --accent:#7aa95c; --danger:#e07171; --warn:#e0b545;
+  --text:#ece9e2; --muted:#9b968a; --light:#eeeed2; --dark:#769656;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column}
+[hidden]{display:none !important}
+button{font-family:inherit}
+
+#menu{justify-content:center;align-items:center;padding:24px;gap:14px;overflow-y:auto}
+#menu h1{font-size:34px;margin:0;letter-spacing:1px}
+#menu .sub{color:var(--muted);font-size:14px;margin:0 0 10px}
+.btn{
+  border:1px solid var(--line);background:var(--panel);color:var(--text);
+  padding:14px 20px;border-radius:12px;font-size:16px;font-weight:600;
+  cursor:pointer;transition:.15s;min-width:200px;
+}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#0f1a08}
+.btn.ghost{min-width:auto;padding:10px 16px;font-size:14px}
+.btn.danger{background:rgba(224,113,113,.15);border-color:var(--danger);color:var(--danger)}
+#roomBox{
+  width:100%;max-width:320px;background:var(--panel);border:1px solid var(--line);
+  border-radius:16px;padding:18px;text-align:center;display:flex;flex-direction:column;gap:10px;
+}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+.code{
+  font-size:44px;font-weight:800;letter-spacing:10px;color:var(--accent);
+  padding-left:10px;font-family:ui-monospace,Menlo,monospace;
+}
+.divider{display:flex;align-items:center;gap:12px;width:100%;max-width:320px;color:var(--muted);font-size:13px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.joinRow{display:flex;gap:10px;width:100%;max-width:320px}
+#codeInput{
+  flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);color:var(--text);
+  border-radius:12px;padding:14px;font-size:20px;letter-spacing:6px;text-align:center;
+  text-transform:uppercase;font-family:ui-monospace,Menlo,monospace;outline:none;
+}
+#codeInput:focus{border-color:var(--accent)}
+.joinRow .btn{min-width:auto;padding:14px 22px}
+.status{font-size:13px;color:var(--muted);min-height:18px;text-align:center}
+.status.err{color:var(--danger)}
+.status.ok{color:var(--accent)}
+
+#game{background:var(--bg)}
+.bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top));
+  gap:8px;flex:0 0 auto;background:var(--panel);border-bottom:1px solid var(--line);
+}
+.bar.bottom{
+  border-bottom:0;border-top:1px solid var(--line);
+  padding-bottom:calc(10px + env(safe-area-inset-bottom));
+}
+.pinfo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;min-width:0;flex:1}
+.avatar{
+  width:28px;height:28px;border-radius:50%;background:var(--panel2);
+  border:1px solid var(--line);display:grid;place-items:center;font-size:14px;flex:0 0 auto;
+}
+.pname{
+  background:transparent;border:0;color:var(--text);font:inherit;font-weight:600;
+  padding:2px 4px;border-radius:6px;min-width:0;flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;outline:none;
+}
+.pname:focus{background:var(--panel2);border:1px solid var(--line)}
+.offTag{font-size:11px;color:var(--danger);font-weight:700;letter-spacing:.5px;padding:2px 6px;background:rgba(224,113,113,.15);border-radius:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:0 0 auto;transition:background .3s}
+.dot.ok{background:var(--accent)}
+.dot.wait{background:var(--warn)}
+.dot.bad{background:var(--danger)}
+.iconBtn{
+  background:var(--panel2);border:1px solid var(--line);color:var(--text);
+  width:38px;height:38px;border-radius:10px;font-size:18px;cursor:pointer;
+  display:grid;place-items:center;flex:0 0 auto;padding:0;
+}
+.iconBtn:active{transform:scale(.94)}
+
+.tray{
+  display:flex;align-items:center;gap:1px;min-height:22px;
+  padding:2px 12px;font-size:20px;line-height:1;flex:0 0 auto;background:var(--panel);
+}
+.tray.top{border-bottom:1px solid var(--line)}
+.tray.bottom{border-top:1px solid var(--line)}
+.tray .w{color:#fbfbf8;text-shadow:0 0 1px #000,0 1px 1px rgba(0,0,0,.6)}
+.tray .b{color:#3a3a38;text-shadow:0 0 2px rgba(255,255,255,.25)}
+.tray .adv{margin-left:auto;font-size:12px;font-weight:700;color:var(--accent)}
+
+#boardWrap{flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-height:0;padding:4px}
+#board{
+  --s: min(96vw, calc(100vh - 260px));
+  --sq: calc(var(--s) / 8);
+  width:var(--s);height:var(--s);
+  display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+  border-radius:8px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.5);
+  position:relative;
+}
+@supports (height:100dvh){
+  #board{--s: min(96vw, calc(100dvh - 260px));}
+}
+.sq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sq.light{background:var(--light)}
+.sq.dark{background:var(--dark)}
+.sq.last::after{content:"";position:absolute;inset:0;background:rgba(255,225,60,.35);z-index:1;pointer-events:none}
+.sq.sel::after{content:"";position:absolute;inset:0;background:rgba(255,225,60,.60);z-index:1;pointer-events:none}
+.sq.check::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(255,60,60,.9),rgba(255,60,60,0) 70%);z-index:1;pointer-events:none}
+.sq.dot::before{content:"";position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(0,0,0,.25);z-index:1;pointer-events:none}
+.sq.cap::before{content:"";position:absolute;inset:7%;border-radius:50%;border:.18em solid rgba(0,0,0,.25);z-index:1;pointer-events:none}
+.piece{position:relative;z-index:2;line-height:1;font-size:calc(var(--sq) * .82);pointer-events:none}
+.piece.w{color:#fbfbf8;text-shadow:0 0 1px #000,0 1px 2px rgba(0,0,0,.65)}
+.piece.b{color:#1c1c1a;text-shadow:0 0 2px rgba(255,255,255,.35),0 1px 2px rgba(0,0,0,.5)}
+.coord{position:absolute;font-size:10px;font-weight:700;opacity:.55;pointer-events:none;z-index:1}
+.coord.file{right:2px;bottom:1px}
+.coord.rank{left:2px;top:1px}
+.sq.light .coord{color:#5c6b3c}
+.sq.dark  .coord{color:#e8e8dc}
+
+#statusLine{font-size:13px;font-weight:600;color:var(--text);flex:1;text-align:center}
+#statusLine.dim{color:var(--muted);font-weight:500}
+
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:60;
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  backdrop-filter:blur(3px);animation:fade .15s ease-out;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.dialog{
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  padding:22px;max-width:340px;width:100%;
+  display:flex;flex-direction:column;gap:14px;
+  animation:pop .18s ease-out;box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.dialog h3{margin:0;font-size:19px;letter-spacing:.3px}
+.dialog p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
+.dialog .actions{display:flex;gap:10px;margin-top:4px}
+.dialog .actions .btn{flex:1;min-width:0;padding:12px 14px;font-size:14px}
+
+#sheet .dialog{gap:6px;padding:14px}
+.sheetBtn{
+  display:flex;align-items:center;gap:12px;
+  background:transparent;border:0;color:var(--text);
+  padding:14px 12px;border-radius:12px;font-size:16px;font-weight:600;
+  cursor:pointer;text-align:left;width:100%;
+}
+.sheetBtn:active{background:var(--panel2)}
+.sheetBtn .ic{font-size:20px;width:24px;text-align:center}
+.sheetBtn.danger{color:var(--danger)}
+
+#history .dialog{padding:0;max-width:360px;max-height:75vh;overflow:hidden}
+#history .hHead{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+#history .hHead h3{margin:0;font-size:17px}
+#history .hList{padding:8px 20px 16px;overflow-y:auto;max-height:60vh;font-family:ui-monospace,Menlo,monospace;font-size:14px}
+#history .hRow{display:flex;gap:12px;padding:4px 0;border-radius:6px}
+#history .hRow:nth-child(odd){background:rgba(255,255,255,.02)}
+#history .hNum{color:var(--muted);width:30px;flex:0 0 auto}
+#history .hW,#history .hB{flex:1;min-width:0}
+#history .empty{color:var(--muted);text-align:center;padding:24px;font-family:inherit}
+
+#over .dialog{text-align:center;align-items:center}
+#over .bigGlyph{font-size:56px;line-height:1}
+#over .result{font-size:22px;font-weight:800;letter-spacing:.5px}
+#over .reason{color:var(--muted);font-size:14px}
+
+#toast{
+  position:fixed;top:calc(12px + env(safe-area-inset-top));
+  left:50%;transform:translateX(-50%);
+  background:var(--panel);border:1px solid var(--line);
+  padding:10px 16px;border-radius:12px;font-size:14px;font-weight:600;
+  z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.hide{transform:translateX(-50%) translateY(-8px)}
+
+#promo .dialog{flex-direction:row;max-width:auto;padding:12px;gap:8px;align-items:center}
+.promoBtn{
+  width:60px;height:60px;border-radius:12px;border:1px solid var(--line);
+  background:var(--panel2);display:grid;place-items:center;cursor:pointer;
+  font-size:36px;line-height:1;padding:0;
+}
+.promoBtn:active{transform:scale(.94)}
+
+#reconnect .dialog{text-align:center;align-items:center}
+.spinner{
+  width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--accent);
+  border-radius:50%;animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.debug{
+  font-family:ui-monospace,Menlo,monospace;font-size:9px;color:#555;
+  position:fixed;bottom:2px;left:4px;right:4px;text-align:center;
+  pointer-events:none;z-index:99;
+}
+</style>
+</head>
+<body>
+
+<div id="menu" class="screen">
+  <h1>♞ Chess</h1>
+  <p class="sub">Play with a friend on another phone</p>
+
+  <button id="createBtn" class="btn primary">Create Game</button>
+
+  <div id="roomBox" hidden>
+    <div class="label">Room code</div>
+    <div id="roomCode" class="code">----</div>
+    <button id="shareBtn" class="btn ghost">Share Link</button>
+    <div id="hostStatus" class="status">Waiting for opponent…</div>
+  </div>
+
+  <div class="divider"><span>or</span></div>
+
+  <div class="joinRow">
+    <input id="codeInput" maxlength="4" placeholder="CODE" autocapitalize="characters"
+           autocomplete="off" autocorrect="off" spellcheck="false">
+    <button id="joinBtn" class="btn primary">Join</button>
+  </div>
+
+  <div id="menuStatus" class="status"></div>
+  <button id="resumeBtn" class="btn ghost" hidden>Resume last game</button>
+</div>
+
+<div id="game" class="screen" hidden>
+  <div class="bar top">
+    <div class="pinfo">
+      <span class="avatar" id="oppAvatar">?</span>
+      <input class="pname" id="oppName" value="Opponent" maxlength="14">
+      <span class="offTag" id="oppOff" hidden>OFFLINE</span>
+    </div>
+    <span class="dot" id="connDot" title="Connection"></span>
+    <button class="iconBtn" id="menuBtn" title="Menu">☰</button>
+  </div>
+
+  <div class="tray top" id="trayTop"></div>
+  <div id="boardWrap"><div id="board"></div></div>
+  <div class="tray bottom" id="trayBottom"></div>
+
+  <div class="bar bottom">
+    <div class="pinfo">
+      <span class="avatar" id="myAvatar">?</span>
+      <input class="pname" id="myName" value="You" maxlength="14">
+    </div>
+    <div id="statusLine">Connecting…</div>
+    <button class="iconBtn" id="flipBtn" title="Flip board">⇅</button>
+  </div>
+</div>
+
+<div id="promo" class="overlay" hidden><div class="dialog" id="promoDialog"></div></div>
+<div id="confirm" class="overlay" hidden><div class="dialog" id="confirmDialog"></div></div>
+<div id="sheet" class="overlay" hidden><div class="dialog" id="sheetDialog"></div></div>
+<div id="history" class="overlay" hidden><div class="dialog" id="historyDialog"></div></div>
+<div id="over" class="overlay" hidden><div class="dialog" id="overDialog"></div></div>
+
+<div id="toast"></div>
+<div class="debug" id="debug"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getDatabase, ref, set, get, update, onValue, onDisconnect, off
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+/* =========================================================
+   FIREBASE
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBg1VC0cd1FmGiXTkMvFFG-eSL46FmgtZU",
+  authDomain: "chess-e4910.firebaseapp.com",
+  databaseURL: "https://chess-e4910-default-rtdb.firebaseio.com",
+  projectId: "chess-e4910",
+  storageBucket: "chess-e4910.firebasestorage.app",
+  messagingSenderId: "62635884266",
+  appId: "1:62635884266:web:0375748951994b26cb2193",
+  measurementId: "G-WPMMGH247F"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+/* =========================================================
+   CHESS ENGINE
+   ========================================================= */
+const GLYPH = {k:'♚', q:'♛', r:'♜', b:'♝', n:'♞', p:'♟'};
+const DIRS = {
+  n:[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]],
+  b:[[-1,-1],[-1,1],[1,-1],[1,1]],
+  r:[[-1,0],[1,0],[0,-1],[0,1]],
+  k:[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]
+};
+const inside = (r,c) => r>=0 && r<8 && c>=0 && c<8;
+
+function initialState(){
+  const b = new Array(64).fill(null);
+  const back = ['r','n','b','q','k','b','n','r'];
+  for (let c=0;c<8;c++){
+    b[c]='b'+back[c]; b[8+c]='bp'; b[48+c]='wp'; b[56+c]='w'+back[c];
+  }
+  return {board:b, turn:'w', castling:{wk:true,wq:true,bk:true,bq:true}, ep:-1, half:0, full:1};
+}
+function normalizeState(s){
+  if (!s) return null;
+  const board = new Array(64).fill(null);
+  const raw = s.board || {};
+  for (let i=0;i<64;i++){
+    const v = Array.isArray(s.board) ? s.board[i] : raw[i];
+    board[i] = v || null;
+  }
+  return {
+    board,
+    turn: s.turn === 'b' ? 'b' : 'w',
+    castling: s.castling || {wk:false,wq:false,bk:false,bq:false},
+    ep: (typeof s.ep === 'number') ? s.ep : -1,
+    half: s.half || 0,
+    full: s.full || 1
+  };
+}
+function findKing(b,color){
+  const t=color+'k';
+  for(let i=0;i<64;i++) if(b[i]===t) return i;
+  return -1;
+}
+function isAttacked(st,r,c,by){
+  const b=st.board;
+  const pd=(by==='w')?1:-1;
+  for(const dc of [-1,1]){ const rr=r+pd,cc=c+dc; if(inside(rr,cc)&&b[rr*8+cc]===by+'p') return true; }
+  for(const [dr,dc] of DIRS.n){ const rr=r+dr,cc=c+dc; if(inside(rr,cc)&&b[rr*8+cc]===by+'n') return true; }
+  for(const [dr,dc] of DIRS.k){ const rr=r+dr,cc=c+dc; if(inside(rr,cc)&&b[rr*8+cc]===by+'k') return true; }
+  for(const [dr,dc] of DIRS.r){
+    let rr=r+dr,cc=c+dc;
+    while(inside(rr,cc)){ const p=b[rr*8+cc]; if(p){ if(p[0]===by&&(p[1]==='r'||p[1]==='q')) return true; break; } rr+=dr;cc+=dc; }
+  }
+  for(const [dr,dc] of DIRS.b){
+    let rr=r+dr,cc=c+dc;
+    while(inside(rr,cc)){ const p=b[rr*8+cc]; if(p){ if(p[0]===by&&(p[1]==='b'||p[1]==='q')) return true; break; } rr+=dr;cc+=dc; }
+  }
+  return false;
+}
+function pushPawn(moves,from,to,promoRow){
+  if((to>>3)===promoRow) for(const q of ['q','r','b','n']) moves.push({from,to,promotion:q});
+  else moves.push({from,to});
+}
+function addCastles(st,moves,i,color,b){
+  const row=color==='w'?7:0;
+  if(i!==row*8+4) return;
+  const opp=color==='w'?'b':'w';
+  if(isAttacked(st,row,4,opp)) return;
+  const kR=color==='w'?st.castling.wk:st.castling.bk;
+  if(kR&&!b[row*8+5]&&!b[row*8+6]&&!isAttacked(st,row,5,opp)&&!isAttacked(st,row,6,opp))
+    moves.push({from:i,to:row*8+6,castle:'k'});
+  const qR=color==='w'?st.castling.wq:st.castling.bq;
+  if(qR&&!b[row*8+3]&&!b[row*8+2]&&!b[row*8+1]&&!isAttacked(st,row,3,opp)&&!isAttacked(st,row,2,opp))
+    moves.push({from:i,to:row*8+2,castle:'q'});
+}
+function genMoves(st,color){
+  const b=st.board,moves=[];
+  for(let i=0;i<64;i++){
+    const p=b[i]; if(!p||p[0]!==color) continue;
+    const r=i>>3,c=i&7,t=p[1];
+    if(t==='p'){
+      const dir=color==='w'?-1:1;
+      const startRow=color==='w'?6:1;
+      const promoRow=color==='w'?0:7;
+      const r1=r+dir;
+      if(inside(r1,c)&&!b[r1*8+c]){
+        pushPawn(moves,i,r1*8+c,promoRow);
+        const r2=r+2*dir;
+        if(r===startRow&&!b[r2*8+c]) moves.push({from:i,to:r2*8+c});
+      }
+      for(const dc of [-1,1]){
+        const nr=r+dir,nc=c+dc; if(!inside(nr,nc)) continue;
+        const j=nr*8+nc;
+        if(b[j]&&b[j][0]!==color) pushPawn(moves,i,j,promoRow);
+        else if(!b[j]&&st.ep===j) moves.push({from:i,to:j,ep:true});
+      }
+    } else if(t==='n'||t==='k'){
+      for(const [dr,dc] of DIRS[t]){
+        const nr=r+dr,nc=c+dc; if(!inside(nr,nc)) continue;
+        const j=nr*8+nc;
+        if(!b[j]||b[j][0]!==color) moves.push({from:i,to:j});
+      }
+      if(t==='k') addCastles(st,moves,i,color,b);
+    } else {
+      const dirs=t==='b'?DIRS.b:(t==='r'?DIRS.r:DIRS.k);
+      for(const [dr,dc] of dirs){
+        let nr=r+dr,nc=c+dc;
+        while(inside(nr,nc)){
+          const j=nr*8+nc;
+          if(!b[j]) moves.push({from:i,to:j});
+          else{ if(b[j][0]!==color) moves.push({from:i,to:j}); break; }
+          nr+=dr;nc+=dc;
+        }
+      }
+    }
+  }
+  return moves;
+}
+function applyMove(st,m){
+  const b=st.board.slice();
+  const p=b[m.from];
+  const color=p[0],type=p[1];
+  const cast={...st.castling};
+  let captured=b[m.to];
+  if(m.ep) captured='xp';
+  if(m.ep) b[(m.from>>3)*8+(m.to&7)]=null;
+  b[m.to]=m.promotion?color+m.promotion:p;
+  b[m.from]=null;
+  if(m.castle){
+    const row=m.from>>3;
+    if(m.castle==='k'){ b[row*8+5]=b[row*8+7]; b[row*8+7]=null; }
+    else{ b[row*8+3]=b[row*8+0]; b[row*8+0]=null; }
+  }
+  if(type==='k'){
+    if(color==='w'){ cast.wk=false; cast.wq=false; } else{ cast.bk=false; cast.bq=false; }
+  }
+  if(m.from===63||m.to===63) cast.wk=false;
+  if(m.from===56||m.to===56) cast.wq=false;
+  if(m.from===7 ||m.to===7 ) cast.bk=false;
+  if(m.from===0 ||m.to===0 ) cast.bq=false;
+  let ep=-1;
+  if(type==='p'&&Math.abs((m.to>>3)-(m.from>>3))===2)
+    ep=(((m.from>>3)+(m.to>>3))/2)*8+(m.from&7);
+  return {board:b, turn:color==='w'?'b':'w', castling:cast, ep,
+    half:(type==='p'||captured)?0:st.half+1,
+    full:st.full+(color==='b'?1:0)};
+}
+function legalMoves(st,color){
+  const out=[],opp=color==='w'?'b':'w';
+  for(const m of genMoves(st,color)){
+    const ns=applyMove(st,m);
+    const k=findKing(ns.board,color);
+    if(k<0||!isAttacked(ns,k>>3,k&7,opp)) out.push(m);
+  }
+  return out;
+}
+function toSAN(st, mv, newState){
+  const p = st.board[mv.from];
+  const type = p[1];
+  const toFile = 'abcdefgh'[mv.to & 7];
+  const toRank = 8 - (mv.to >> 3);
+  const toSq = toFile + toRank;
+  const captured = !!st.board[mv.to] || mv.ep;
+  let s = '';
+  if (mv.castle === 'k') s = 'O-O';
+  else if (mv.castle === 'q') s = 'O-O-O';
+  else if (type === 'p'){
+    if (captured) s += 'abcdefgh'[mv.from & 7] + 'x';
+    s += toSq;
+    if (mv.promotion) s += '=' + mv.promotion.toUpperCase();
+  } else {
+    s += type.toUpperCase();
+    const sameSq = [];
+    for (let i=0;i<64;i++){
+      if (i===mv.from) continue;
+      if (st.board[i] !== p) continue;
+      const qm = genMoves(st, st.turn).find(x => x.from===i && x.to===mv.to);
+      if (qm) sameSq.push(i);
+    }
+    if (sameSq.length){
+      const fromFile = 'abcdefgh'[mv.from & 7];
+      const fromRank = 8 - (mv.from >> 3);
+      const fileClash = sameSq.some(i => (i&7) === (mv.from&7));
+      const rankClash = sameSq.some(i => (i>>3) === (mv.from>>3));
+      if (!fileClash) s += fromFile;
+      else if (!rankClash) s += fromRank;
+      else s += fromFile + fromRank;
+    }
+    if (captured) s += 'x';
+    s += toSq;
+  }
+  const opp = newState.turn;
+  const oppMoves = legalMoves(newState, opp);
+  const k = findKing(newState.board, opp);
+  const inChk = k >= 0 && isAttacked(newState, k>>3, k&7, newState.turn==='w'?'b':'w');
+  if (oppMoves.length === 0 && inChk) s += '#';
+  else if (inChk) s += '+';
+  return s;
+}
+
+/* ---------- Sound ---------- */
+let audioCtx = null;
+function ensureAudio(){
+  if (!audioCtx){ try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+}
+function beep(freq, dur, type, vol){
+  if (!audioCtx) return;
+  try {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = type || 'sine';
+    o.frequency.value = freq;
+    g.gain.value = vol == null ? 0.08 : vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    const t = audioCtx.currentTime;
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.start(t); o.stop(t + dur + 0.02);
+  } catch(e){}
+}
+const SFX = {
+  move:    () => beep(440, 0.06, 'triangle', 0.05),
+  capture: () => { beep(220, 0.10, 'square', 0.06); setTimeout(()=>beep(180,0.09,'square',0.05), 40); },
+  check:   () => { beep(880, 0.09, 'sawtooth', 0.05); setTimeout(()=>beep(1100,0.09,'sawtooth',0.05), 90); },
+  over:    () => { beep(523,0.15,'sine',0.09); setTimeout(()=>beep(392,0.20,'sine',0.09), 150); setTimeout(()=>beep(262,0.30,'sine',0.09), 350); },
+  win:     () => { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.14,'sine',0.09), i*100)); },
+  lose:    () => { [400,300,220,160].forEach((f,i)=>setTimeout(()=>beep(f,0.16,'sine',0.09), i*130)); },
+  notify:  () => beep(660, 0.10, 'sine', 0.07)
+};
+
+/* =========================================================
+   STATE
+   ========================================================= */
+let roomCode = '';
+let myRole = 'w';       // 'w' = host, 'b' = joiner
+let myColor = 'w';
+let myName = 'You';
+let state = initialState();
+let allLegal = [];
+let selected = -1, legalForSel = [];
+let lastMove = null;
+let gameOver = false, inCheck = false;
+let orientation = 'w';
+let moveHistory = [];
+let capturedBy = {w:[], b:[]};
+let pendingDrawOffer = false;
+let roomRef = null;
+let roomUnsub = null;
+let presenceUnsub = null;
+let connectedUnsub = null;
+let isConnected = false;
+let lastRemoteWriteTs = 0;
+
+const $ = id => document.getElementById(id);
+const menuEl=$('menu'), gameEl=$('game');
+const boardEl=$('board'), statusLineEl=$('statusLine'), debugEl=$('debug');
+const promoEl=$('promo'), connDotEl=$('connDot'), oppOffEl=$('oppOff');
+
+function dbg(t){ debugEl.textContent = t; }
+function setConn(cls){ connDotEl.className = 'dot ' + cls; }
+
+let toastTimer=null;
+function toast(msg, ms){
+  const t=$('toast');
+  t.textContent = msg;
+  t.classList.add('show'); t.classList.remove('hide');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.classList.remove('show'); t.classList.add('hide'); }, ms||1800);
+}
+
+function makeCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s='';
+  for(let i=0;i<4;i++) s+=chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+/* =========================================================
+   FIREBASE HELPERS
+   ========================================================= */
+function roomPath(){ return `chess_game/rooms/${roomCode}`; }
+function myPresencePath(){ return `${roomPath()}/players/${myRole}`; }
+function oppRole(){ return myRole === 'w' ? 'b' : 'w'; }
+function oppPresencePath(){ return `${roomPath()}/players/${oppRole()}`; }
+
+async function writeRoom(data){
+  if (!roomCode) return;
+  try { await set(ref(db, roomPath()), data); }
+  catch(e){ dbg('write err: '+e.message); }
+}
+async function updateRoom(data){
+  if (!roomCode) return;
+  try { await update(ref(db, roomPath()), data); }
+  catch(e){ dbg('update err: '+e.message); }
+}
+async function readRoom(){
+  if (!roomCode) return null;
+  try {
+    const snap = await get(ref(db, roomPath()));
+    return snap.exists() ? snap.val() : null;
+  } catch(e){ dbg('read err: '+e.message); return null; }
+}
+
+/* =========================================================
+   CONNECTIVITY
+   ========================================================= */
+function setupConnectivity(){
+  const connRef = ref(db, '.info/connected');
+  if (connectedUnsub) connectedUnsub();
+  connectedUnsub = onValue(connRef, (snap) => {
+    isConnected = snap.val() === true;
+    if (isConnected){
+      setConn('ok');
+      // Re-register presence + onDisconnect each time we reconnect
+      const myRef = ref(db, myPresencePath());
+      onDisconnect(myRef).update({ online: false, lastSeen: Date.now() });
+      update(myRef, { online: true, lastSeen: Date.now() }).catch(()=>{});
+      dbg('firebase: connected');
+    } else {
+      setConn('bad');
+      dbg('firebase: disconnected');
+    }
+  });
+}
+
+/* =========================================================
+   ROOM LIFECYCLE
+   ========================================================= */
+async function createRoom(){
+  ensureAudio();
+  roomCode = makeCode();
+  myRole = 'w'; myColor = 'w';
+  myName = $('myName').value || 'You';
+
+  const initial = initialState();
+  const roomData = {
+    createdAt: Date.now(),
+    state: initial,
+    moveHistory: [],
+    capturedBy: {w:[], b:[]},
+    lastMove: null,
+    gameOver: false,
+    players: {
+      w: { name: myName, online: true, lastSeen: Date.now() },
+      b: null
+    },
+    v: 1
+  };
+
+  await writeRoom(roomData);
+  $('roomCode').textContent = roomCode;
+  $('roomBox').hidden = false;
+  $('hostStatus').textContent = 'Waiting for opponent to join…';
+  $('hostStatus').className = 'status ok';
+  $('menuStatus').textContent = '';
+
+  saveSession();
+  setupConnectivity();
+  attachRoomListener();
+}
+
+async function joinRoom(code){
+  ensureAudio();
+  const test = await get(ref(db, `chess_game/rooms/${code}`));
+  if (!test.exists()){
+    $('menuStatus').textContent = 'Room not found. Check the code.';
+    $('menuStatus').className = 'status err';
+    return;
+  }
+  roomCode = code;
+  myRole = 'b'; myColor = 'b';
+  myName = $('myName').value || 'You';
+
+  // Register as black
+  await update(ref(db, `${roomPath()}/players`), {
+    b: { name: myName, online: true, lastSeen: Date.now() }
+  });
+
+  saveSession();
+  $('menuStatus').textContent = '';
+  setupConnectivity();
+  attachRoomListener();
+}
+
+function attachRoomListener(){
+  if (roomUnsub) roomUnsub();
+  const rRef = ref(db, roomPath());
+  roomUnsub = onValue(rRef, (snap) => {
+    const data = snap.val();
+    if (!data){
+      // Room was deleted
+      if (gameEl.hidden === false){
+        toast('Room closed');
+        leaveToMenu();
+      }
+      return;
+    }
+    applyRemoteState(data);
+  });
+}
+
+function applyRemoteState(data){
+  // Only mark as "remote write" if it's not our own write
+  // We detect this by comparing board to our local board.
+  const remoteState = normalizeState(data.state);
+  const remoteHistory = data.moveHistory || [];
+  const remoteCaptured = data.capturedBy || {w:[],b:[]};
+  const remoteLastMove = data.lastMove || null;
+  const remoteOver = !!data.gameOver;
+
+  const myTurn = !gameEl.hidden && (myColor === (remoteState ? remoteState.turn : 'w'));
+
+  // Detect whether the incoming state differs from ours (means opponent moved)
+  const changed = !state
+    || state.turn !== remoteState.turn
+    || !boardsEqual(state.board, remoteState.board);
+
+  const prevOver = gameOver;
+
+  state = remoteState;
+  moveHistory = remoteHistory;
+  capturedBy = remoteCaptured;
+  lastMove = remoteLastMove;
+  gameOver = remoteOver;
+
+  selected = -1; legalForSel = [];
+
+  // Show game screen if we aren't yet
+  if (gameEl.hidden && data.players && data.players[myRole]){
+    showGameScreen();
+  }
+
+  refresh();
+  updatePlayerBadges(data.players || {});
+  updateOppName(data.players);
+
+  if (changed && !gameEl.hidden){
+    // Sounds for opponent's move
+    if (state.turn === myColor && !gameOver){
+      const opp = state.turn === 'w' ? 'b' : 'w';
+      const k = findKing(state.board, state.turn);
+      const wasChk = k >= 0 && isAttacked(state, k>>3, k&7, opp);
+      if (wasChk) SFX.check();
+      else SFX.notify();
+    }
+  }
+  if (!prevOver && gameOver) handleGameOverResult();
+}
+
+function boardsEqual(a,b){
+  for (let i=0;i<64;i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+function updatePlayerBadges(players){
+  const opp = players[oppRole()];
+  if (!opp) { oppOffEl.hidden = true; return; }
+  const offline = opp.online === false;
+  oppOffEl.hidden = !offline;
+}
+
+function updateOppName(players){
+  const opp = players[oppRole()];
+  if (opp && opp.name){
+    const el = $('oppName');
+    if (document.activeElement !== el) el.value = opp.name.slice(0,14);
+  }
+}
+
+function handleGameOverResult(){
+  const myTurnNow = state.turn === myColor;
+  let iWon = false;
+  if (inCheck){
+    // The side whose turn it is just got checkmated
+    iWon = myTurnNow ? false : true;
+  }
+  if (allLegal.length === 0){
+    if (inCheck){
+      showGameOver(iWon ? 'win' : 'lose', 'Checkmate');
+      if (iWon) SFX.win(); else SFX.lose();
+    } else {
+      showGameOver('draw', 'Stalemate');
+    }
+  }
+}
+
+/* =========================================================
+   GAME UI
+   ========================================================= */
+function showGameScreen(){
+  menuEl.hidden = true;
+  gameEl.hidden = false;
+  orientation = myColor;
+  $('oppAvatar').textContent = myColor === 'w' ? '♟' : '♙';
+  $('myAvatar').textContent  = myColor === 'w' ? '♙' : '♟';
+  $('myName').value = myName;
+}
+
+function refresh(){
+  allLegal = legalMoves(state, state.turn);
+  const opp = state.turn === 'w' ? 'b' : 'w';
+  const k = findKing(state.board, state.turn);
+  inCheck = k >= 0 && isAttacked(state, k>>3, k&7, opp);
+  gameOver = allLegal.length === 0;
+  render();
+  renderTrays();
+  updateStatus();
+}
+
+function updateStatus(){
+  statusLineEl.classList.remove('dim');
+  const myTurn = state.turn === myColor;
+  if (allLegal.length === 0){
+    if (inCheck) statusLineEl.textContent = myTurn ? 'Checkmate — you lost' : 'Checkmate — you win!';
+    else statusLineEl.textContent = 'Stalemate — draw';
+    return;
+  }
+  statusLineEl.textContent = (myTurn ? 'Your move' : 'Opponent’s move') + (inCheck ? ' • Check!' : '');
+}
+
+function render(){
+  boardEl.innerHTML = '';
+  const order = []; for (let i=0;i<64;i++) order.push(i);
+  if (orientation === 'b') order.reverse();
+  const kingSq = findKing(state.board, state.turn);
+
+  for (const i of order){
+    const r=i>>3, c=i&7;
+    const sq=document.createElement('div');
+    sq.className='sq '+(((r+c)%2)?'dark':'light');
+    if (lastMove && (i === lastMove.from || i === lastMove.to)) sq.classList.add('last');
+    if (i === selected) sq.classList.add('sel');
+    if (inCheck && i === kingSq) sq.classList.add('check');
+
+    const p = state.board[i];
+    if (p){
+      const sp = document.createElement('span');
+      sp.className = 'piece ' + p[0];
+      sp.textContent = GLYPH[p[1]];
+      sq.appendChild(sp);
+    }
+    const mv = legalForSel.find(m => m.to === i);
+    if (mv) sq.classList.add((p || mv.ep) ? 'cap' : 'dot');
+
+    const showRank = (orientation === 'w' ? c === 0 : c === 7);
+    const showFile = (orientation === 'w' ? r === 7 : r === 0);
+    if (showRank){ const el=document.createElement('span'); el.className='coord rank'; el.textContent = 8-r; sq.appendChild(el); }
+    if (showFile){ const el=document.createElement('span'); el.className='coord file'; el.textContent = 'abcdefgh'[c]; sq.appendChild(el); }
+
+    sq.addEventListener('click', () => onSquareClick(i));
+    boardEl.appendChild(sq);
+  }
+}
+
+function renderTrays(){
+  const oppColor = myColor === 'w' ? 'b' : 'w';
+  const mine = capturedBy[myColor] || [];
+  const theirs = capturedBy[oppColor] || [];
+  const val = {p:1,n:3,b:3,r:5,q:9};
+  const sum = arr => arr.reduce((a,x)=>a+(val[x]||0),0);
+  const diff = sum(mine) - sum(theirs);
+  drawTrayEl($('trayTop'), theirs, myColor, diff < 0 ? -diff : 0);
+  drawTrayEl($('trayBottom'), mine, oppColor, diff > 0 ? diff : 0);
+}
+function drawTrayEl(el, list, pieceColor, adv){
+  el.innerHTML = '';
+  const order = {q:0,r:1,b:2,n:3,p:4};
+  list.slice().sort((a,b)=>order[a]-order[b]).forEach(t=>{
+    const s=document.createElement('span');
+    s.className = pieceColor === 'w' ? 'w' : 'b';
+    s.textContent = GLYPH[t];
+    el.appendChild(s);
+  });
+  if (adv > 0){
+    const a = document.createElement('span');
+    a.className = 'adv'; a.textContent = '+' + adv;
+    el.appendChild(a);
+  }
+}
+
+function onSquareClick(i){
+  if (gameOver) return;
+  if (state.turn !== myColor) return;
+  if (!isConnected) { toast('Connecting…'); return; }
+
+  if (selected >= 0){
+    const matches = legalForSel.filter(m => m.to === i);
+    if (matches.length){
+      if (matches.length > 1 && matches[0].promotion) showPromotion(matches);
+      else commit(matches[0]);
+      return;
+    }
+  }
+  const p = state.board[i];
+  if (p && p[0] === myColor){
+    selected = i;
+    legalForSel = allLegal.filter(m => m.from === i);
+  } else { selected = -1; legalForSel = []; }
+  render();
+}
+
+async function commit(mv){
+  const wasCapture = !!state.board[mv.to] || mv.ep;
+  const capturedPiece = wasCapture ? (state.board[mv.to] || 'p') : null;
+  const movingColor = state.board[mv.from][0];
+  const nextState = applyMove(state, mv);
+  const san = toSAN(state, mv, nextState);
+
+  lastMove = {from: mv.from, to: mv.to};
+  state = nextState;
+  selected = -1; legalForSel = [];
+
+  if (movingColor === 'w') moveHistory.push({w:san, b:''});
+  else {
+    if (moveHistory.length === 0) moveHistory.push({w:'…', b:san});
+    else moveHistory[moveHistory.length-1].b = san;
+  }
+
+  if (capturedPiece && capturedPiece.length === 2 && (capturedPiece[0]==='w' || capturedPiece[0]==='b')){
+    capturedBy[movingColor].push(capturedPiece[1]);
+  }
+
+  // Play sound
+  const opp = state.turn;
+  const oppMoves = legalMoves(state, opp);
+  const k = findKing(state.board, opp);
+  const oppInChk = k >= 0 && isAttacked(state, k>>3, k&7, state.turn==='w'?'b':'w');
+  if (oppMoves.length === 0 && oppInChk) SFX.over();
+  else if (wasCapture) SFX.capture();
+  else if (oppInChk) SFX.check();
+  else SFX.move();
+
+  refresh();
+
+  // Persist to Firebase — the opponent's onValue will pick it up
+  await updateRoom({
+    state,
+    moveHistory,
+    capturedBy,
+    lastMove,
+    gameOver,
+    lastUpdated: Date.now()
+  });
+
+  if (gameOver) handleGameOverResult();
+}
+
+function showPromotion(matches){
+  const d = $('promoDialog');
+  d.innerHTML = '';
+  for (const q of ['q','r','b','n']){
+    const btn = document.createElement('button');
+    btn.className = 'promoBtn';
+    btn.innerHTML = '<span class="piece ' + myColor + '">' + GLYPH[q] + '</span>';
+    btn.onclick = () => {
+      promoEl.hidden = true;
+      const m = matches.find(x => x.promotion === q);
+      if (m) commit(m);
+    };
+    d.appendChild(btn);
+  }
+  promoEl.hidden = false;
+}
+
+/* =========================================================
+   SESSION PERSISTENCE (localStorage)
+   ========================================================= */
+function saveSession(){
+  try {
+    localStorage.setItem('chess_session', JSON.stringify({
+      code: roomCode, role: myRole, name: myName
+    }));
+  } catch(e){}
+}
+function clearSession(){
+  try { localStorage.removeItem('chess_session'); } catch(e){}
+}
+function getSavedSession(){
+  try {
+    const raw = localStorage.getItem('chess_session');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e){ return null; }
+}
+
+async function tryAutoResume(){
+  const saved = getSavedSession();
+  if (!saved || !saved.code) return false;
+
+  const snap = await get(ref(db, `chess_game/rooms/${saved.code}`));
+  if (!snap.exists()){
+    clearSession();
+    return false;
+  }
+
+  roomCode = saved.code;
+  myRole = saved.role || 'w';
+  myColor = myRole;
+  myName = saved.name || (myRole === 'w' ? 'Host' : 'Guest');
+
+  // Re-register presence
+  try {
+    await update(ref(db, `${roomPath()}/players`), {
+      [myRole]: { name: myName, online: true, lastSeen: Date.now() }
+    });
+  } catch(e){}
+
+  setupConnectivity();
+  attachRoomListener();
+  return true;
+}
+
+function leaveToMenu(){
+  if (roomUnsub) { roomUnsub(); roomUnsub = null; }
+  if (connectedUnsub) { connectedUnsub(); connectedUnsub = null; }
+  if (roomCode){
+    // Mark ourselves offline
+    try { update(ref(db, myPresencePath()), { online: false, lastSeen: Date.now() }); } catch(e){}
+  }
+  if (peerCleanup) peerCleanup();
+  roomCode = '';
+  clearSession();
+  gameEl.hidden = true;
+  menuEl.hidden = false;
+  $('roomBox').hidden = true;
+  history.replaceState(null, '', location.pathname);
+}
+
+function peerCleanup(){
+  // no-op in Firebase-only version
+}
+
+/* =========================================================
+   DIALOGS
+   ========================================================= */
+function showConfirm({title, body, confirmText, cancelText, danger, onConfirm, onCancel}){
+  const d = $('confirmDialog');
+  d.innerHTML = '';
+  const h = document.createElement('h3'); h.textContent = title; d.appendChild(h);
+  if (body){ const p = document.createElement('p'); p.textContent = body; d.appendChild(p); }
+  const actions = document.createElement('div'); actions.className = 'actions';
+  const cancel = document.createElement('button');
+  cancel.className = 'btn ghost'; cancel.style.flex = '1';
+  cancel.textContent = cancelText || 'Cancel';
+  cancel.onclick = () => { $('confirm').hidden = true; if (onCancel) onCancel(); };
+  const ok = document.createElement('button');
+  ok.className = 'btn ' + (danger ? 'danger' : 'primary'); ok.style.flex = '1';
+  ok.textContent = confirmText || 'OK';
+  ok.onclick = () => { $('confirm').hidden = true; if (onConfirm) onConfirm(); };
+  actions.appendChild(cancel); actions.appendChild(ok);
+  d.appendChild(actions);
+  $('confirm').hidden = false;
+}
+$('confirm').addEventListener('click', e => { if (e.target === $('confirm')) $('confirm').hidden = true; });
+
+function openSheet(){
+  const d = $('sheetDialog');
+  d.innerHTML = '';
+  const mk = (ic, label, fn, danger) => {
+    const b = document.createElement('button');
+    b.className = 'sheetBtn' + (danger ? ' danger' : '');
+    b.innerHTML = '<span class="ic">' + ic + '</span><span>' + label + '</span>';
+    b.onclick = () => { $('sheet').hidden = true; fn(); };
+    d.appendChild(b);
+  };
+  if (!gameOver){
+    mk('🏳️','Resign', askResign, true);
+    mk('🤝', pendingDrawOffer ? 'Draw pending…' : 'Offer Draw', askDraw);
+  }
+  mk('📜','Move History', openHistory);
+  mk('⇅','Flip Board', () => { orientation = orientation === 'w' ? 'b' : 'w'; render(); });
+  mk('🔄','Reset Game', askReset, true);
+  mk('🚪','Leave Room', askLeave, true);
+  mk('✖','Close', ()=>{});
+  $('sheet').hidden = false;
+}
+$('menuBtn').onclick = openSheet;
+$('sheet').addEventListener('click', e => { if (e.target === $('sheet')) $('sheet').hidden = true; });
+
+function askReset(){
+  showConfirm({
+    title:'Reset game?',
+    body:'This clears the board for both players and starts fresh.',
+    confirmText:'Reset', cancelText:'Cancel', danger:true,
+    onConfirm: async () => {
+      await updateRoom({
+        state: initialState(),
+        moveHistory: [],
+        capturedBy: {w:[], b:[]},
+        lastMove: null,
+        gameOver: false,
+        lastUpdated: Date.now()
+      });
+    }
+  });
+}
+function askResign(){
+  showConfirm({
+    title:'Resign this game?',
+    body:'Your opponent will be declared the winner.',
+    confirmText:'Resign', cancelText:'Keep playing', danger:true,
+    onConfirm: async () => {
+      await updateRoom({ gameOver:true, resignBy: myColor, lastUpdated: Date.now() });
+      gameOver = true;
+      showGameOver('lose','You resigned');
+      SFX.lose();
+    }
+  });
+}
+function askDraw(){
+  if (pendingDrawOffer){
+    showConfirm({
+      title:'Draw offered',
+      body:'Your opponent offered a draw. Accept?',
+      confirmText:'Accept', cancelText:'Decline',
+      onConfirm: async () => {
+        await updateRoom({ gameOver:true, drawAgreed:true, lastUpdated: Date.now() });
+      },
+      onCancel: () => {}
+    });
+    return;
+  }
+  showConfirm({
+    title:'Offer a draw?',
+    body:'Your opponent can accept or decline.',
+    confirmText:'Offer', cancelText:'Cancel',
+    onConfirm: async () => {
+      await update(ref(db, roomPath()), { drawOffer: myColor, drawOfferAt: Date.now() });
+      toast('Draw offered');
+    }
+  });
+}
+function askLeave(){
+  showConfirm({
+    title:'Leave this room?',
+    body:'You can rejoin later using the same code, as long as the room still exists.',
+    confirmText:'Leave', cancelText:'Cancel', danger:true,
+    onConfirm: leaveToMenu
+  });
+}
+
+function openHistory(){
+  const d = $('historyDialog');
+  d.innerHTML = '';
+  const head = document.createElement('div'); head.className = 'hHead';
+  const h = document.createElement('h3'); h.textContent = 'Move History';
+  const close = document.createElement('button');
+  close.className = 'iconBtn'; close.textContent = '✖';
+  close.onclick = () => { $('history').hidden = true; };
+  head.appendChild(h); head.appendChild(close);
+  d.appendChild(head);
+
+  const list = document.createElement('div'); list.className = 'hList';
+  if (moveHistory.length === 0){
+    const e = document.createElement('div'); e.className = 'empty'; e.textContent = 'No moves yet';
+    list.appendChild(e);
+  } else {
+    moveHistory.forEach((row, idx) => {
+      const r = document.createElement('div'); r.className = 'hRow';
+      const n = document.createElement('span'); n.className = 'hNum'; n.textContent = (idx+1) + '.';
+      const w = document.createElement('span'); w.className = 'hW'; w.textContent = row.w || '';
+      const b = document.createElement('span'); b.className = 'hB'; b.textContent = row.b || '';
+      r.appendChild(n); r.appendChild(w); r.appendChild(b);
+      list.appendChild(r);
+    });
+    requestAnimationFrame(()=>{ list.scrollTop = list.scrollHeight; });
+  }
+  d.appendChild(list);
+  $('history').hidden = false;
+}
+$('history').addEventListener('click', e => { if (e.target === $('history')) $('history').hidden = true; });
+
+function showGameOver(kind, reason){
+  const d = $('overDialog');
+  d.innerHTML = '';
+  const g = document.createElement('div'); g.className = 'bigGlyph';
+  g.textContent = kind === 'win' ? '🏆' : (kind === 'lose' ? '😔' : '🤝');
+  const res = document.createElement('div'); res.className = 'result';
+  res.textContent = kind === 'win' ? 'You win!' : (kind === 'lose' ? 'You lost' : 'Draw');
+  const why = document.createElement('div'); why.className = 'reason'; why.textContent = reason || '';
+  const actions = document.createElement('div'); actions.className = 'actions';
+  actions.style.display = 'flex'; actions.style.gap = '10px'; actions.style.marginTop = '6px';
+  const btnNew = document.createElement('button');
+  btnNew.className = 'btn primary'; btnNew.style.flex = '1'; btnNew.textContent = 'New Game';
+  btnNew.onclick = async () => {
+    $('over').hidden = true;
+    await updateRoom({
+      state: initialState(),
+      moveHistory: [],
+      capturedBy: {w:[], b:[]},
+      lastMove: null,
+      gameOver: false,
+      drawAgreed: null,
+      resignBy: null,
+      lastUpdated: Date.now()
+    });
+  };
+  const btnClose = document.createElement('button');
+  btnClose.className = 'btn ghost'; btnClose.style.flex = '1'; btnClose.textContent = 'Review';
+  btnClose.onclick = () => { $('over').hidden = true; };
+  actions.appendChild(btnClose); actions.appendChild(btnNew);
+  d.appendChild(g); d.appendChild(res); d.appendChild(why); d.appendChild(actions);
+  $('over').hidden = false;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+$('createBtn').onclick = () => { ensureAudio(); createRoom(); };
+$('joinBtn').onclick = () => {
+  ensureAudio();
+  const code = $('codeInput').value.trim().toUpperCase();
+  if (code.length !== 4){
+    $('menuStatus').textContent = 'Enter the 4-character code.';
+    $('menuStatus').className = 'status err';
+    return;
+  }
+  $('menuStatus').textContent = '';
+  joinRoom(code);
+};
+$('codeInput').addEventListener('input', () => {
+  $('codeInput').value = $('codeInput').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+});
+$('shareBtn').onclick = async () => {
+  const code = $('roomCode').textContent.trim();
+  const url = location.origin + location.pathname + '?code=' + code;
+  const text = 'Play chess with me! Code: ' + code;
+  if (navigator.share){
+    try { await navigator.share({title:'Chess', text, url}); return; } catch(e){}
+  }
+  try {
+    await navigator.clipboard.writeText(text + '\n' + url);
+    $('hostStatus').textContent = 'Link copied!';
+    $('hostStatus').className = 'status ok';
+  } catch(e){ $('hostStatus').textContent = url; }
+};
+$('flipBtn').onclick = () => { orientation = orientation === 'w' ? 'b' : 'w'; render(); };
+
+$('myName').addEventListener('input', () => {
+  myName = $('myName').value.slice(0,14) || 'You';
+  saveSession();
+  if (roomCode){
+    update(ref(db, `${roomPath()}/players/${myRole}`), { name: myName }).catch(()=>{});
+  }
+});
+$('myName').addEventListener('blur', () => {
+  if (!$('myName').value.trim()) $('myName').value = 'You';
+});
+$('oppName').addEventListener('blur', () => {
+  if (!$('oppName').value.trim()) $('oppName').value = 'Opponent';
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  // Re-register presence when returning to the tab
+  if (roomCode){
+    update(ref(db, myPresencePath()), { online: true, lastSeen: Date.now() }).catch(()=>{});
+  }
+});
+
+/* =========================================================
+   INIT
+   ========================================================= */
+(async function init(){
+  // 1) If ?code=XXXX in URL, prefill joiner
+  const params = new URLSearchParams(location.search);
+  const urlCode = (params.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+  if (urlCode.length === 4){
+    $('codeInput').value = urlCode;
+    $('menuStatus').textContent = 'Code detected — tap Join.';
+  }
+
+  // 2) Try auto-resume from localStorage
+  const saved = getSavedSession();
+  if (saved && saved.code){
+    // Show a "Resume last game" button
+    const btn = $('resumeBtn');
+    btn.hidden = false;
+    btn.textContent = 'Resume last game (' + saved.code + ')';
+    btn.onclick = async () => {
+      btn.hidden = true;
+      $('menuStatus').textContent = 'Resuming…';
+      const ok = await tryAutoResume();
+      if (!ok) $('menuStatus').textContent = 'That game has ended or been removed.';
+    };
+  }
+
+  // Auto-clean stale rooms older than 7 days when the app loads (opportunistic)
+  // (Skip for simplicity — Firebase handles storage fine.)
+})();
+</script>
+</body>
+</html>
